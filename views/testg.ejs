@@ -1,0 +1,252 @@
+<script src="../static/anime-master/anime-master/lib/anime.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="../nodemodules/socket.io-client/dist/socket.io.js"></script>
+<div id="anime-demo">
+    <h1 id="now_player">
+        <%- now_player %>
+    </h1>
+    <h3 id="current_turn">
+        <%- current_turn %>
+    </h3>
+    <div id="squares" class="layout">
+        <%- text %>
+    </div>
+</div>
+<div class="controls">
+    <button class="play-blue">Animate move</button>
+    <button class="play-red-blue">Animate color</button>
+
+
+    <style>
+        body {
+            margin: 20px;
+            font-family: 'Lato';
+            font-weight: 300;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        button {
+            background: orange;
+            color: white;
+            margin: 5px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Lato';
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+
+        button:hover {
+            background: none;
+        }
+        .square {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            background-color:#fee391;
+            display: inline-block;
+            border: 4px;
+            border-radius: 20%;
+            cursor: pointer;
+            transform-origin: center;
+            transition:width 80ms, height 80ms;
+        }
+
+        .controls {
+            margin-top: 250px;
+        }
+    </style>
+
+
+
+    <script>
+        //받아온 값이 빈값인지 아닌지 판단해주는 함수
+        function isEmpty(str) {
+
+            if (typeof str == "undefined" || str == null || str == "")
+                return true;
+            else
+                return false;
+        }
+
+        //div name속성 바꾸기, 1이면 0으로 바꾸고 0이면 1로 바꾸기!
+        function changeName(i, j) {
+            _name = $(`#_${i}_${j}`).attr('name');
+            if (isEmpty(_name)) {
+                return;
+            }
+            if (parseInt(_name) == 0) {
+                $(`#_${i}_${j}`).attr('name', '1');
+            } else if (parseInt(_name) == 1) {
+                $(`#_${i}_${j}`).attr('name', '0');
+            }
+        }
+
+        function changeNameValues(i, j) {
+            changeName(i, j);
+            changeName(i - 1, j);
+            changeName(i + 1, j);
+            changeName(i, j - 1);
+            changeName(i, j + 1);
+        }
+        //div name속성 기준으로 어떤색으로 색을 칠해야할지 정해주는 함수
+        /*function judgeColor(i, j) {
+            _name = $(`#_${i}_${j}`).attr('name');
+            if (parseFloat(_name) == 1) return '#d95f0e';
+            else if (parseFloat(_name) == 0) return '#fee391';
+        }*/
+        function judgeColor(i, j) {
+            _name = $(`#_${i}_${j}`).attr('name');
+            if (parseFloat(_name) == 1) return '#d95f0e';
+            else if (parseFloat(_name) == 0) return '#fee391';
+        }
+
+        //클릭했을때 십자모양으로 뒤집는 에니매이션
+        function reverseAni(i, j, n) {
+            //changeNameValues(i, j);
+            var reversecolors = anime.timeline({
+                easing: 'easeOutExpo',
+                direction: '750',
+                autoplay: false
+            })
+            for (k = i - n; k <= i + n; k++) {
+                if (k == i) continue;
+                reversecolors.add({
+                    targets: `#_${k}_${j}`,
+                    background: judgeColor(k, j)
+                }, 0)
+            }
+            for (k = j - n; k <= j + n; k++) {
+                if (k == j) continue;
+                reversecolors.add({
+                    targets: `#_${i}_${k}`,
+                    background: judgeColor(i, k)
+                }, 0)
+            }
+            reversecolors.add({
+                targets: `#_${i}_${j}`,
+                background: judgeColor(i, j)
+            }, 0).play();
+        }
+        //사각형들 왼->오 로 움직이는 애니메이션
+        var move = anime({
+            targets: '.square',
+            translateX: 270,
+            delay: anime.stagger(100, {
+                from: 'center'
+            }),
+            autoplay: false
+        });
+
+        //사각형이 클릭됐을때 실행되는 동작들
+        /*$('.square').click(function() {
+            var a = $(this).attr('id');
+            var click_i = parseInt(a[1]);
+            var click_j = parseInt(a[3]);
+            reverseAni(click_i, click_j, 1);
+        });*/
+
+        //Animate move버튼이 눌렸을때 실행되는 동작들
+        $('.play-blue').click(function() {
+            move.play();
+        });
+    </script>
+
+    <script>
+        //setCookie('user', 'yunsuu', 1);
+        var userA = '<%- userA %>';
+        var userB = '<%- userB %>';
+        var current_turn = <%- current_turn %>;
+        //소켓 통신 부분
+        $(function() {
+            var player = getCookie('user');
+            reloadColor();
+            var socket = io();
+            //제출(emit)부분
+            $('.square').click(function() {
+                console.log(player, current_turn, userA, userB);
+                //A턴일때
+                if (current_turn % 2 == 0) {
+                    //플레이어가 A가 아니면 종료
+                    if (player != userA) {
+                        console.log('B 차례가 아님')
+                        return;
+                    }
+                }
+                //B턴일때
+                else if (current_turn % 2 == 1) {
+                    //플레이어가 B가아니면 종료
+                    if (player != userB) {
+                        console.log('A 차례가 아님')
+                        return;
+                    }
+                }
+                console.log('-------------------');
+                var a = $(this).attr('id');
+                var click_i = parseInt(a[1]);
+                var click_j = parseInt(a[3]);
+                changeNameValues(click_i, click_j);
+                var changed_matrix = $('#squares').html();
+                changeNameValues(click_i, click_j);
+                var url_path = $(location).attr('pathname').split('/')
+                socket.emit('Square Click', {
+                    'click_user': player,
+                    'i': click_i,
+                    'j': click_j,
+                    'changed_matrix': changed_matrix,
+                    'current_turn' : current_turn,
+                    'userA' : userA,
+                    'userB' : userB,
+                    'room_num' : url_path[2],
+                });
+            });
+            //소켓 리스너(db에서 변경해줬던 값들을 바꿔주는 역할)
+            socket.on('Square Click', function(msg) {
+
+                //여기서 턴 바꾸기
+                current_turn -= 1;
+                var url_path = $(location).attr('pathname').split('/')
+                if (current_turn == -1) {
+                    alert("게임종료!!!!!!!!!!!")
+                    $.ajax({
+                        url: '../deleteRoom',
+                        dataType: 'json',
+                        type: 'POST',
+                        data: {'room_num':url_path[2]},
+                        success: function(result) {
+                            if (result) {
+
+                            }
+                        }
+                    });
+                    location.href = '../menu';
+                }
+                $('#now_player').text(msg.now_player);
+                $('#current_turn').text(msg.current_turn);
+                //애니메이션
+                changeNameValues(msg.i, msg.j);
+                reverseAni(msg.i, msg.j, 1);
+            });
+        });
+
+        function reloadColor() {
+            $('.square').each(function(i, e) {
+                var _name = parseInt($(this).attr('name'));
+                if (_name == 0) $(this).css('background-color', '#fee391');
+                else if (_name == 1) $(this).css('background-color', '#d95f0e');
+            });
+        }
+        var getCookie = function(name) {
+            var value = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+            return value ? value[2] : null;
+        };
+        var setCookie = function(name, value, exp) {
+            var date = new Date();
+            date.setTime(date.getTime() + exp * 24 * 60 * 60 * 1000);
+            document.cookie = name + '=' + value + ';expires=' + date.toUTCString() + ';path=/';
+        };
+    </script>
+
+</div>

@@ -1,0 +1,157 @@
+<script src="anime-master/anime-master/lib/anime.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<div id="anime-demo">
+
+    <div class="layout">
+        <div class="line">
+            <div class="square" id="_1_1" name='0'></div>
+            <div class="square" id="_1_2" name='0'></div>
+            <div class="square" id="_1_3" name='0'></div>
+        </div>
+        <div class="line">
+            <div class="square" id="_2_1" name='0'></div>
+            <div class="square" id="_2_2" name='0'></div>
+            <div class="square" id="_2_3" name='0'></div>
+        </div>
+        <div class="line">
+            <div class="square" id="_3_1" name='0'></div>
+            <div class="square" id="_3_2" name='0'></div>
+            <div class="square" id="_3_3" name='0'></div>
+        </div>
+    </div>
+</div>
+<div class="controls">
+    <button class="play-blue">Animate move</button>
+    <button class="play-red-blue">Animate color</button>
+
+
+    <style>
+        body {
+            margin: 20px;
+            font-family: 'Lato';
+            font-weight: 300;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        
+        button {
+            background: orange;
+            color: white;
+            margin: 5px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Lato';
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        
+        button:hover {
+            background: none;
+        }
+        
+        .square {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            background-color: #fee391;
+            display: inline-block;
+            border: 4px;
+        }
+        
+        .controls {
+            margin-top: 250px;
+        }
+    </style>
+
+
+
+
+    <script>
+        //받아온 값이 빈값인지 아닌지 판단해주는 함수
+        function isEmpty(str) {
+
+            if (typeof str == "undefined" || str == null || str == "")
+                return true;
+            else
+                return false;
+        }
+
+        //div name속성 기준으로 어떤색으로 색을 칠해야할지 정해주는 함수
+        function judgeColor(i, j) {
+            _name = $(`#_${i}_${j}`).attr('name');
+            if (parseFloat(_name) == 1) return '#d95f0e';
+            else if (parseFloat(_name) == 0) return '#fee391';
+        }
+
+        //div name속성 바꾸기, 1이면 0으로 바꾸고 0이면 1로 바꾸기!
+        function changeName(i, j) {
+            _name = $(`#_${i}_${j}`).attr('name');
+            if (isEmpty(_name)) return;
+            if (parseInt(_name) == 0) {
+                $(`#_${i}_${j}`).attr('name', '1');
+            } else if (parseInt(_name) == 1) {
+                $(`#_${i}_${j}`).attr('name', '0');
+            }
+        }
+
+        function changeNameValues(i, j) {
+            changeName(i, j);
+            changeName(i - 1, j);
+            changeName(i + 1, j);
+            changeName(i, j - 1);
+            changeName(i, j + 1);
+        }
+
+        //클릭했을때 십자모양으로 뒤집는 에니매이션 
+        function reverseAni(i, j, n) {
+            console.log(i, j)
+            changeNameValues(i, j);
+
+            var reversecolors = anime.timeline({
+                easing: 'easeOutExpo',
+                direction: '750',
+                autoplay: false
+            })
+            for (k = i - n; k <= i + n; k++) {
+                if (k == i) continue;
+                reversecolors.add({
+                    targets: `#_${k}_${j}`,
+                    background: judgeColor(k, j)
+                }, 0)
+            }
+            for (k = j - n; k <= j + n; k++) {
+                if (k == j) continue;
+                reversecolors.add({
+                    targets: `#_${i}_${k}`,
+                    background: judgeColor(i, k)
+                }, 0)
+            }
+            reversecolors.add({
+                targets: `#_${i}_${j}`,
+                background: judgeColor(i, j)
+            }, 0).play();
+        }
+        //사각형들 왼->오 로 움직이는 애니메이션
+        var move = anime({
+            targets: '.square',
+            translateX: 270,
+            delay: anime.stagger(100, {
+                from: 'center'
+            }),
+            autoplay: false
+        });
+
+        //사각형이 클릭됐을때 실행되는 동작들
+        $('.square').click(function() {
+            var a = $(this).attr('id');
+            var click_i = parseInt(a[1]);
+            var click_j = parseInt(a[3]);
+            reverseAni(click_i, click_j, 1);
+        });
+
+        //Animate move버튼이 눌렸을때 실행되는 동작들
+        $('.play-blue').click(function() {
+            move.play();
+        });
+    </script>

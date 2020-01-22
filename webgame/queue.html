@@ -1,0 +1,42 @@
+
+<!doctype html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <title>Socket.IO chat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+        form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+        form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+    </style>
+</head>
+<body>
+
+<h2>큐 기다리는중!! 페이지를 나가지 말아주세요</h2>
+</body>
+<script src="./nodemodules/socket.io-client/dist/socket.io.js"></script>
+<script>
+    $(function () {
+        var socket = io();
+        var user_name = getCookie('user');
+        if(user_name != null){
+            console.log(`${user_name} 큐 들어감`);
+            socket.emit('In Queue', {user_name:user_name});
+        }
+        socket.on('Complete match', function(msg){
+            alert('매칭완료!')
+            location.href = `./game/${msg.room_num}`;
+        });
+    });
+
+    function getCookie(name) {
+        var value = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return value? value[2] : null;
+    }
+</script>
+</html>
